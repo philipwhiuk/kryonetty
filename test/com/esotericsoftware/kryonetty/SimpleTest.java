@@ -7,7 +7,7 @@ import com.esotericsoftware.kryo.Kryo;
 
 import java.net.InetSocketAddress;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -22,12 +22,12 @@ public class SimpleTest {
 	public static void setupClass() {
 		server = new Server(54321) {
 			public void connected (ChannelHandlerContext ctx) {
-				System.out.println("Server: Client connected: " + ctx.getChannel().getRemoteAddress());
-				ctx.getChannel().write("make a programmer rich");
+				System.out.println("Server: Client connected: " + ctx.channel().remoteAddress());
+				ctx.channel().write("make a programmer rich");
 			}
 
 			public void disconnected (ChannelHandlerContext ctx) {
-				System.out.println("Server: Client disconnected: " + ctx.getChannel().getRemoteAddress());
+				System.out.println("Server: Client disconnected: " + ctx.channel().remoteAddress());
 			}
 
 			public void received (ChannelHandlerContext ctx, Object object) {
@@ -43,11 +43,11 @@ public class SimpleTest {
 		};
 		client = new Client(new InetSocketAddress("localhost", 54321)) {
 			public void connected (ChannelHandlerContext ctx) {
-				System.out.println("Client: Connected to server: " + ctx.getChannel().getRemoteAddress());
+				System.out.println("Client: Connected to server: " + ctx.channel().remoteAddress());
 			}
 
 			public void disconnected (ChannelHandlerContext ctx) {
-				System.out.println("Client: Disconnected from server: " + ctx.getChannel().getRemoteAddress());
+				System.out.println("Client: Disconnected from server: " + ctx.channel().remoteAddress());
 			}
 
 			public void received (ChannelHandlerContext ctx, Object object) {

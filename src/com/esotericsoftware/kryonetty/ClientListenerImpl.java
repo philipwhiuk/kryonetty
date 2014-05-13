@@ -4,7 +4,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 
 import com.esotericsoftware.kryo.Kryo;
 

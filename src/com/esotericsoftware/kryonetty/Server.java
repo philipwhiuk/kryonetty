@@ -5,9 +5,15 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+//TODO: import io.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 /**
  * Skeleton Kryo server implementation using Netty.
@@ -19,11 +25,21 @@ public abstract class Server implements Endpoint {
 
 	public Server (int port) {
 		ExecutorService threadPool = Executors.newCachedThreadPool();
-		bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(threadPool, threadPool));
-		bootstrap.setPipelineFactory(new KryoChannelPipelineFactory(this));
-		bootstrap.setOption("child.tcpNoDelay", true);
-		bootstrap.setOption("child.reuseAddress", true);
-		channel = bootstrap.bind(new InetSocketAddress(port));
+		EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
+      EventLoopGroup workerGroup = new NioEventLoopGroup();
+		bootstrap = new ServerBootstrap();
+		bootstrap
+			.group(bossGroup, workerGroup)
+			.channel(NioServerSocketChannel.class)
+			.childHandler(new ChannelInitializer<SocketChannel>() { // (4)
+	         @Override
+	         public void initChannel(SocketChannel ch) throws Exception {
+	             ch.pipeline().addLast(new KryoChannelHandler(Server.this));
+	         }
+		   })
+		   .option(ChannelOption.TCP_NODELAY, true);
+//TODO:		bootstrap.setOption("child.reuseAddress", true);
+		channel = bootstrap.bind(new InetSocketAddress(port)).channel();
 	}
 
 	public void close () {

@@ -5,10 +5,13 @@ import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 /**
  * Provides a skeleton Endpoint implementation using Netty IO.
@@ -18,7 +21,7 @@ public abstract class Client implements Endpoint {
 	/**
 	 * Netty bootstrap object used to create the channel.
 	 */
-	private ClientBootstrap bootstrap;
+	private Bootstrap bootstrap;
 	/**
 	 * Netty channel used to write objects on.
 	 */
@@ -33,15 +36,18 @@ public abstract class Client implements Endpoint {
 	 * @param serverAddress Server to connect to.
 	 */
 	public Client (SocketAddress serverAddress) {
+	   EventLoopGroup workerGroup = new NioEventLoopGroup();
 		ExecutorService threadPool = Executors.newCachedThreadPool();
-		bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(threadPool, threadPool));
-		bootstrap.setPipelineFactory(new KryoChannelPipelineFactory(this));
-		bootstrap.setOption("tcpNoDelay", true);
+		bootstrap = new Bootstrap();
+		bootstrap.group(workerGroup)
+			.channel(NioSocketChannel.class)
+			.option(ChannelOption.TCP_NODELAY, true)
+			.handler(new KryoChannelHandler(this));
 		// bootstrap.setOption("trafficClass", 0x10); // IPTOS_LOWDELAY
 		ChannelFuture connect = bootstrap.connect(serverAddress);
 		if (!connect.awaitUninterruptibly(CONNECT_TIMEOUT))
 				throw new RuntimeException("Timeout connecting.");
-		channel = connect.getChannel();
+		channel = connect.channel();
 	}
 
 	/**
@@ -49,7 +55,7 @@ public abstract class Client implements Endpoint {
 	 * @param object
 	 */
 	public void send (Object object) {
-		channel.write(object);
+		channel.writeAndFlush(object).awaitUninterruptibly(1000);
 	}
 
 	/**
